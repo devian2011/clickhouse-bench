@@ -1,0 +1,17 @@
+version: '3.7'
+services:
+  postgres:
+    image: postgres
+    environment:
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test
+      POSTGRES_DB: test
+    ports:
+      - "15432:5432"
+  clickhouse:
+    image: yandex/clickhouse-server
+    #volumes:
+      #- ./config.xml:/etc/clickhouse-server/config.xml
+      #- ./config/clickhouse.user.xml:/etc/clickhouse-server/users.xml
+    ports:
+      - "19000:9000"
