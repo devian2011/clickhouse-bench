@@ -2,74 +2,150 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
+	"math/rand"
 	"reportTest/pkg/bench"
 	"reportTest/pkg/froze"
+	"strings"
+	"sync"
+	"time"
 )
+
+type benchResult struct {
+	name       string
+	operations map[string][]*froze.Froze
+}
+
+func (br *benchResult) generateBenchResult() {
+	fmt.Println("==================== " + br.name + " ========================")
+	for name, o := range br.operations {
+		fmt.Printf("Operation: %s\n", name)
+		var all []string
+		var durations time.Duration
+		for _, v := range o {
+			dur := v.GetDiff()
+			all = append(all, dur.String())
+			durations += dur
+		}
+		fmt.Printf("Times: %d\n", len(o))
+		fmt.Printf("Detailed: %s\n", strings.Join(all, " "))
+		fmt.Printf("Avg Time: %s", durations.String())
+	}
+	fmt.Println("=============================================================\n\n")
+}
 
 func main() {
 	ctx := context.Background()
 	clickhouse := bench.NewClickHouseConnection(ctx)
 	postgres := bench.NewPostgresConnection()
+	noPartionPostgres := bench.NewPostgresConnection()
+
+	dates := generateRandDates()
 
 	defer func() {
 		clickhouse.Close()
 		postgres.Shutdown()
 	}()
 	log.Println("Bench has been started")
-	benchClickHouse(clickhouse)
-	benchPostgresNoPartition(postgres)
-	benchPostgresPartition(postgres)
-	log.Println("Testing stop")
+	wg := &sync.WaitGroup{}
+	wg.Add(3)
+	go benchClickHouse(clickhouse, wg, dates)
+	go benchPostgresPartition(postgres, wg, dates)
+	go benchPostgresNoPartition(noPartionPostgres, wg, dates)
+
+	wg.Wait()
+	log.Println("Testing end")
 }
 
-func benchClickHouse(clickhouse *bench.ClickHouseConnection) {
-	log.Println("\nClickhouse bench start\n")
-	callBench(func() {
-		clickhouse.GroupByBrandIdLastDay("2022-05-08")
-	}, "Clickhouse-GroupByBrandIdLastDay")
-	callBench(func() {
-		clickhouse.GroupByUserIdSumAmountLastThreeDays("2022-05-08")
-	}, "Clickhouse-GroupByUserIdSumAmountLastThreeDays")
-	callBench(func() {
-		clickhouse.SelectLastTenDays("2022-05-08")
-	}, "Clickhouse-SelectLastTenDays")
-	log.Println("\nClickhouse bench end\n")
+func benchClickHouse(clickhouse *bench.ClickHouseConnection, wg *sync.WaitGroup, dates []string) {
+	benchResult := benchResult{
+		name:       "ClickHouse",
+		operations: make(map[string][]*froze.Froze, 0),
+	}
+
+	for _, date := range dates {
+		benchResult.operations["GroupByBrandIdLastDay"] = append(
+			benchResult.operations["GroupByBrandIdLastDay"],
+			callBench(func() { clickhouse.GroupByBrandIdLastDay(date) }))
+
+		benchResult.operations["GroupByUserIdSumAmountLastThreeDays"] = append(
+			benchResult.operations["GroupByUserIdSumAmountLastThreeDays"],
+			callBench(func() { clickhouse.GroupByUserIdSumAmountLastThreeDays(date) }))
+
+		benchResult.operations["SelectTwoDays"] = append(
+			benchResult.operations["SelectTwoDays"],
+			callBench(func() { clickhouse.SelectTwoDays(date) }))
+	}
+	wg.Done()
 }
 
-func benchPostgresNoPartition(postgres *bench.PostgresConnection) {
-	log.Println("\nPostgres no partition bench has been started\n")
-	callBench(func() {
-		postgres.GroupByBrandIdLastDay("2022-05-08", "user_balance_l")
-	}, "PostgresNoPartition-GroupByBrandIdLastDay")
-	callBench(func() {
-		postgres.GroupByUserIdSumAmountLastThreeDays("2022-05-08", "user_balance_l")
-	}, "PostgresNoPartition-GroupByUserIdSumAmountLastThreeDays")
-	callBench(func() {
-		postgres.SelectLastTenDays("2022-05-08", "user_balance_l")
-	}, "PostgresNoPartition-SelectLastTenDays")
-	log.Println("\nPostgres no partition bench end\n")
+func benchPostgresNoPartition(postgres *bench.PostgresConnection, wg *sync.WaitGroup, dates []string) {
+	benchResult := benchResult{
+		name:       "PostgresNoPartition ",
+		operations: make(map[string][]*froze.Froze, 0),
+	}
+
+	for _, date := range dates {
+		benchResult.operations["GroupByBrandIdLastDay"] = append(
+			benchResult.operations["GroupByBrandIdLastDay"],
+			callBench(func() { postgres.GroupByBrandIdLastDay(date, "user_balance_l") }))
+
+		benchResult.operations["GroupByUserIdSumAmountLastThreeDays"] = append(
+			benchResult.operations["GroupByUserIdSumAmountLastThreeDays"],
+			callBench(func() { postgres.GroupByUserIdSumAmountLastThreeDays(date, "user_balance_l") }))
+
+		benchResult.operations["SelectTwoDays"] = append(
+			benchResult.operations["SelectTwoDays"],
+			callBench(func() { postgres.SelectTenDays(date, "user_balance_l") }))
+	}
+	wg.Done()
 }
 
-func benchPostgresPartition(postgres *bench.PostgresConnection) {
-	log.Println("\nPostgres partition bench has been started\n")
-	callBench(func() {
-		postgres.GroupByBrandIdLastDay("2022-05-08", "user_balance")
-	}, "PostgresPartition-GroupByBrandIdLastDay")
-	callBench(func() {
-		postgres.GroupByUserIdSumAmountLastThreeDays("2022-05-08", "user_balance")
-	}, "PostgresPartition-GroupByUserIdSumAmountLastThreeDays")
-	callBench(func() {
-		postgres.SelectLastTenDays("2022-05-08", "user_balance")
-	}, "PostgresPartition-SelectLastTenDays")
-	log.Println("\nPostgres partition bench end\n")
+func benchPostgresPartition(postgres *bench.PostgresConnection, wg *sync.WaitGroup, dates []string) {
+	benchResult := benchResult{
+		name:       "PostgresNoPartition ",
+		operations: make(map[string][]*froze.Froze, 0),
+	}
+
+	for _, date := range dates {
+		benchResult.operations["GroupByBrandIdLastDay"] = append(
+			benchResult.operations["GroupByBrandIdLastDay"],
+			callBench(func() { postgres.GroupByBrandIdLastDay(date, "user_balance") }))
+
+		benchResult.operations["GroupByUserIdSumAmountLastThreeDays"] = append(
+			benchResult.operations["GroupByUserIdSumAmountLastThreeDays"],
+			callBench(func() { postgres.GroupByUserIdSumAmountLastThreeDays(date, "user_balance") }))
+
+		benchResult.operations["SelectTenDays"] = append(
+			benchResult.operations["SelectTenDays"],
+			callBench(func() { postgres.SelectTenDays(date, "user_balance") }))
+	}
+	wg.Done()
 }
 
-func callBench(execution func(), operation string) {
-	time := &froze.Froze{}
-	log.Println("Operation: " + operation + " operation has been started")
-	time.Start()
+func generateRandDates() []string {
+	dates := make([]string, 10)
+	now := time.Now()
+	monthAgo := now.AddDate(0, -1, 0)
+	min := monthAgo.Unix()
+	delta := now.Unix() - min
+	for c := 0; c < 10; c++ {
+		dates[c] = randDate(min, delta)
+	}
+
+	return dates
+}
+
+func randDate(min int64, delta int64) string {
+	sec := rand.Int63n(delta) + min
+	return time.Unix(sec, 0).Format("2006-01-02")
+}
+
+func callBench(execution func()) *froze.Froze {
+	t := &froze.Froze{}
+	t.Start()
 	execution()
-	time.Stop()
-	log.Println("Operation: " + operation + " took: " + time.GetDiff().String())
+	t.Stop()
+	return t
 }

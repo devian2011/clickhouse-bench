@@ -32,7 +32,7 @@ func main() {
 
 	out := []chan<- faker.UserData{clickHouseCh, postgresCh}
 
-	faker.GenerateFakeData(1, 12_000_000, 10, 10, out)
+	faker.GenerateFakeData(1, 12_000_000, 10, 1000, out)
 
 	wg.Wait()
 	log.Println("Data has been loaded")

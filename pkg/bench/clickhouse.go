@@ -40,7 +40,7 @@ func (chc *ClickHouseConnection) GroupByBrandIdLastDay(today string) {
 	yesterday := now.AddDate(0, 0, -1)
 	yesterdayFormat := yesterday.Format("2006-01-02")
 
-	_, qErr := chc.conn.Query(chc.ctx,
+	r, qErr := chc.conn.Query(chc.ctx,
 		fmt.Sprintf(
 			"SELECT COUNT(user_id), brand_id FROM user_balance WHERE created_at >= '%s 00:00:00' AND created_at <= '%s 23:59:59' GROUP BY brand_id",
 			yesterdayFormat, yesterdayFormat))
@@ -48,6 +48,7 @@ func (chc *ClickHouseConnection) GroupByBrandIdLastDay(today string) {
 	if qErr != nil {
 		log.Println("Error for select by brand and last day Err: " + qErr.Error())
 	}
+	r.Close()
 }
 
 func (chc *ClickHouseConnection) GroupByUserIdSumAmountLastThreeDays(today string) {
@@ -55,7 +56,7 @@ func (chc *ClickHouseConnection) GroupByUserIdSumAmountLastThreeDays(today strin
 	toDate := now.AddDate(0, 0, -1)
 	fromDate := now.AddDate(0, 0, -3)
 
-	_, qErr := chc.conn.Query(chc.ctx,
+	r, qErr := chc.conn.Query(chc.ctx,
 		fmt.Sprintf(
 			"SELECT SUM(amount), user_id FROM user_balance WHERE created_at >= '%s 00:00:00' AND created_at <= '%s 23:59:59'  GROUP BY user_id",
 			fromDate.Format("2006-01-02"), toDate.Format("2006-01-02")))
@@ -63,20 +64,23 @@ func (chc *ClickHouseConnection) GroupByUserIdSumAmountLastThreeDays(today strin
 	if qErr != nil {
 		log.Println("Error for select amount sum for user and last three days day Err: " + qErr.Error())
 	}
+
+	r.Close()
 }
 
-func (chc *ClickHouseConnection) SelectLastTenDays(today string) {
+func (chc *ClickHouseConnection) SelectTwoDays(today string) {
 	now, _ := time.Parse("2006-01-02", today)
-	fromDate := now.AddDate(0, 0, -11)
+	fromDate := now.AddDate(0, 0, -10)
 
-	_, qErr := chc.conn.Query(chc.ctx,
+	r, qErr := chc.conn.Query(chc.ctx,
 		fmt.Sprintf(
-			"SELECT click_id, brand_id, balance_before, balance_after, amount, user_id, created_at FROM user_balance WHERE created_at >= '%s 00:00:00'",
-			fromDate.Format("2006-01-02")))
+			"SELECT click_id, brand_id, balance_before, balance_after, amount, user_id, created_at FROM user_balance WHERE created_at >= '%s 00:00:00' AND created_at <= '%s 23:59:59'",
+			fromDate.Format("2006-01-02"), now.Format("2006-01-02")))
 
 	if qErr != nil {
 		log.Println("Error for select all data for last ten days Err: " + qErr.Error())
 	}
+	r.Close()
 }
 
 func (chc *ClickHouseConnection) Close() {

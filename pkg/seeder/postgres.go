@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS user_balance_l (
 	created_at timestamp WITHOUT TIME ZONE
 );
 CREATE INDEX user_balance_l_created_at_brand ON user_balance_l USING btree (created_at, brand_id);
-CREATE INDEX user_balance_l_brand_id ON user_balance_l using hash (brand_id);
+CREATE INDEX user_balance_l_brand_id ON user_balance_l using btree (brand_id);
 CREATE INDEX user_balance_l_user_id ON user_balance_l USING btree (user_id);
 
 DROP TABLE IF EXISTS user_balance;
@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS user_balance (
 	created_at timestamp WITHOUT TIME ZONE
 ) PARTITION BY RANGE (created_at);
 CREATE INDEX user_balance_created_at_brand ON user_balance USING btree (created_at, brand_id);
-CREATE INDEX user_balance_l_brand_id ON user_balance_l using hash (brand_id);
+CREATE INDEX user_balance_brand_id ON user_balance using btree (brand_id);
 CREATE INDEX user_balance_user_id ON user_balance USING btree (user_id);
 `
 
