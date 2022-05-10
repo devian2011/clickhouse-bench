@@ -63,9 +63,9 @@ func (chc *PostgresConnection) GroupByUserIdSumAmountLastThreeDays(today string,
 	r.Close()
 }
 
-func (chc *PostgresConnection) SelectTenDays(today string, table string) {
+func (chc *PostgresConnection) SelectFourDays(today string, table string) {
 	now, _ := time.Parse("2006-01-02", today)
-	fromDate := now.AddDate(0, 0, -10)
+	fromDate := now.AddDate(0, 0, -4)
 
 	r, qErr := chc.conn.Query(
 		fmt.Sprintf(

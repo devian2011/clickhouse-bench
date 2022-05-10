@@ -30,7 +30,7 @@ func (br *benchResult) generateBenchResult() {
 		}
 		fmt.Printf("Times: %d\n", len(o))
 		fmt.Printf("Detailed: %s\n", strings.Join(all, " "))
-		fmt.Printf("Avg Time: %s\n", durations.String())
+		fmt.Printf("Avg Time: %s\n", (durations / time.Duration(len(o))).String())
 	}
 	fmt.Println("=============================================================\n\n")
 }
@@ -46,6 +46,7 @@ func main() {
 	defer func() {
 		clickhouse.Close()
 		postgres.Shutdown()
+		noPartionPostgres.Shutdown()
 	}()
 	log.Println("Bench has been started")
 	wg := &sync.WaitGroup{}
@@ -73,9 +74,9 @@ func benchClickHouse(clickhouse *bench.ClickHouseConnection, wg *sync.WaitGroup,
 			benchResult.operations["GroupByUserIdSumAmountLastThreeDays"],
 			callBench(func() { clickhouse.GroupByUserIdSumAmountLastThreeDays(date) }))
 
-		benchResult.operations["SelectTwoDays"] = append(
-			benchResult.operations["SelectTwoDays"],
-			callBench(func() { clickhouse.SelectTwoDays(date) }))
+		benchResult.operations["SelectFourDays"] = append(
+			benchResult.operations["SelectFourDays"],
+			callBench(func() { clickhouse.SelectFourDays(date) }))
 	}
 	benchResult.generateBenchResult()
 	wg.Done()
@@ -83,7 +84,7 @@ func benchClickHouse(clickhouse *bench.ClickHouseConnection, wg *sync.WaitGroup,
 
 func benchPostgresNoPartition(postgres *bench.PostgresConnection, wg *sync.WaitGroup, dates []string) {
 	benchResult := benchResult{
-		name:       "PostgresNoPartition ",
+		name:       "PostgresNoPartition",
 		operations: make(map[string][]*froze.Froze, 0),
 	}
 
@@ -98,7 +99,7 @@ func benchPostgresNoPartition(postgres *bench.PostgresConnection, wg *sync.WaitG
 
 		benchResult.operations["SelectTwoDays"] = append(
 			benchResult.operations["SelectTwoDays"],
-			callBench(func() { postgres.SelectTenDays(date, "user_balance_l") }))
+			callBench(func() { postgres.SelectFourDays(date, "user_balance_l") }))
 	}
 	benchResult.generateBenchResult()
 	wg.Done()
@@ -106,7 +107,7 @@ func benchPostgresNoPartition(postgres *bench.PostgresConnection, wg *sync.WaitG
 
 func benchPostgresPartition(postgres *bench.PostgresConnection, wg *sync.WaitGroup, dates []string) {
 	benchResult := benchResult{
-		name:       "PostgresNoPartition ",
+		name:       "PostgresPartition",
 		operations: make(map[string][]*froze.Froze, 0),
 	}
 
@@ -119,9 +120,9 @@ func benchPostgresPartition(postgres *bench.PostgresConnection, wg *sync.WaitGro
 			benchResult.operations["GroupByUserIdSumAmountLastThreeDays"],
 			callBench(func() { postgres.GroupByUserIdSumAmountLastThreeDays(date, "user_balance") }))
 
-		benchResult.operations["SelectTenDays"] = append(
-			benchResult.operations["SelectTenDays"],
-			callBench(func() { postgres.SelectTenDays(date, "user_balance") }))
+		benchResult.operations["SelectFourDays"] = append(
+			benchResult.operations["SelectFourDays"],
+			callBench(func() { postgres.SelectFourDays(date, "user_balance") }))
 	}
 	benchResult.generateBenchResult()
 	wg.Done()

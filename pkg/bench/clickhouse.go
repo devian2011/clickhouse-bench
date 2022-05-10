@@ -68,9 +68,9 @@ func (chc *ClickHouseConnection) GroupByUserIdSumAmountLastThreeDays(today strin
 	r.Close()
 }
 
-func (chc *ClickHouseConnection) SelectTwoDays(today string) {
+func (chc *ClickHouseConnection) SelectFourDays(today string) {
 	now, _ := time.Parse("2006-01-02", today)
-	fromDate := now.AddDate(0, 0, -10)
+	fromDate := now.AddDate(0, 0, -4)
 
 	r, qErr := chc.conn.Query(chc.ctx,
 		fmt.Sprintf(
