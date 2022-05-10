@@ -30,7 +30,7 @@ func (br *benchResult) generateBenchResult() {
 		}
 		fmt.Printf("Times: %d\n", len(o))
 		fmt.Printf("Detailed: %s\n", strings.Join(all, " "))
-		fmt.Printf("Avg Time: %s", durations.String())
+		fmt.Printf("Avg Time: %s\n", durations.String())
 	}
 	fmt.Println("=============================================================\n\n")
 }
