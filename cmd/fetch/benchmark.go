@@ -50,9 +50,9 @@ func main() {
 	}()
 	log.Println("Bench has been started")
 	wg := &sync.WaitGroup{}
-	wg.Add(1)
-	//go benchClickHouse(clickhouse, wg, dates)
-	//go benchPostgresPartition(postgres, wg, dates)
+	wg.Add(3)
+	go benchClickHouse(clickhouse, wg, dates)
+	go benchPostgresPartition(postgres, wg, dates)
 	go benchPostgresNoPartition(noPartionPostgres, wg, dates)
 
 	wg.Wait()
