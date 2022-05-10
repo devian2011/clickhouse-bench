@@ -77,6 +77,7 @@ func benchClickHouse(clickhouse *bench.ClickHouseConnection, wg *sync.WaitGroup,
 			benchResult.operations["SelectTwoDays"],
 			callBench(func() { clickhouse.SelectTwoDays(date) }))
 	}
+	benchResult.generateBenchResult()
 	wg.Done()
 }
 
@@ -99,6 +100,7 @@ func benchPostgresNoPartition(postgres *bench.PostgresConnection, wg *sync.WaitG
 			benchResult.operations["SelectTwoDays"],
 			callBench(func() { postgres.SelectTenDays(date, "user_balance_l") }))
 	}
+	benchResult.generateBenchResult()
 	wg.Done()
 }
 
@@ -121,6 +123,7 @@ func benchPostgresPartition(postgres *bench.PostgresConnection, wg *sync.WaitGro
 			benchResult.operations["SelectTenDays"],
 			callBench(func() { postgres.SelectTenDays(date, "user_balance") }))
 	}
+	benchResult.generateBenchResult()
 	wg.Done()
 }
 
