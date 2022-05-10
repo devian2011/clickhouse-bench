@@ -50,9 +50,9 @@ func main() {
 	}()
 	log.Println("Bench has been started")
 	wg := &sync.WaitGroup{}
-	wg.Add(3)
-	go benchClickHouse(clickhouse, wg, dates)
-	go benchPostgresPartition(postgres, wg, dates)
+	wg.Add(1)
+	//go benchClickHouse(clickhouse, wg, dates)
+	//go benchPostgresPartition(postgres, wg, dates)
 	go benchPostgresNoPartition(noPartionPostgres, wg, dates)
 
 	wg.Wait()
@@ -77,6 +77,10 @@ func benchClickHouse(clickhouse *bench.ClickHouseConnection, wg *sync.WaitGroup,
 		benchResult.operations["SelectFourDays"] = append(
 			benchResult.operations["SelectFourDays"],
 			callBench(func() { clickhouse.SelectFourDays(date) }))
+
+		benchResult.operations["GroupByBrandIdTwoDayForThreeBrands"] = append(
+			benchResult.operations["GroupByBrandIdTwoDayForThreeBrands"],
+			callBench(func() { clickhouse.SelectFourDays(date) }))
 	}
 	benchResult.generateBenchResult()
 	wg.Done()
@@ -100,6 +104,10 @@ func benchPostgresNoPartition(postgres *bench.PostgresConnection, wg *sync.WaitG
 		benchResult.operations["SelectTwoDays"] = append(
 			benchResult.operations["SelectTwoDays"],
 			callBench(func() { postgres.SelectFourDays(date, "user_balance_l") }))
+
+		benchResult.operations["GroupByBrandIdTwoDayForThreeBrands"] = append(
+			benchResult.operations["GroupByBrandIdTwoDayForThreeBrands"],
+			callBench(func() { postgres.SelectFourDays(date, "user_balance_l") }))
 	}
 	benchResult.generateBenchResult()
 	wg.Done()
@@ -122,6 +130,10 @@ func benchPostgresPartition(postgres *bench.PostgresConnection, wg *sync.WaitGro
 
 		benchResult.operations["SelectFourDays"] = append(
 			benchResult.operations["SelectFourDays"],
+			callBench(func() { postgres.SelectFourDays(date, "user_balance") }))
+
+		benchResult.operations["GroupByBrandIdTwoDayForThreeBrands"] = append(
+			benchResult.operations["GroupByBrandIdTwoDayForThreeBrands"],
 			callBench(func() { postgres.SelectFourDays(date, "user_balance") }))
 	}
 	benchResult.generateBenchResult()

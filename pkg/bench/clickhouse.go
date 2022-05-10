@@ -51,6 +51,22 @@ func (chc *ClickHouseConnection) GroupByBrandIdLastDay(today string) {
 	r.Close()
 }
 
+func (chc *ClickHouseConnection) GroupByBrandIdTwoDayForThreeBrands(today string) {
+	now, _ := time.Parse("2006-01-02", today)
+	yesterday := now.AddDate(0, 0, -1)
+	yesterdayFormat := yesterday.Format("2006-01-02")
+
+	r, qErr := chc.conn.Query(chc.ctx,
+		fmt.Sprintf(
+			"SELECT COUNT(user_id), brand_id FROM user_balance WHERE created_at >= '%s 00:00:00' AND created_at <= '%s 23:59:59' WHERE brand_id IN (5,9,4) GROUP BY brand_id",
+			yesterdayFormat, yesterdayFormat))
+
+	if qErr != nil {
+		log.Println("Error for select by brand and last day Err: " + qErr.Error())
+	}
+	r.Close()
+}
+
 func (chc *ClickHouseConnection) GroupByUserIdSumAmountLastThreeDays(today string) {
 	now, _ := time.Parse("2006-01-02", today)
 	toDate := now.AddDate(0, 0, -1)
