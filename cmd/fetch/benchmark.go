@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"log"
 	"math/rand"
@@ -36,6 +37,9 @@ func (br *benchResult) generateBenchResult() {
 }
 
 func main() {
+	testType := flag.String("test", "all", "Test name - all, clickhouse, postgres, postgrespartial")
+	flag.Parse()
+
 	ctx := context.Background()
 	clickhouse := bench.NewClickHouseConnection(ctx)
 	postgres := bench.NewPostgresConnection()
@@ -50,10 +54,24 @@ func main() {
 	}()
 	log.Println("Bench has been started")
 	wg := &sync.WaitGroup{}
-	wg.Add(3)
-	go benchClickHouse(clickhouse, wg, dates)
-	go benchPostgresPartition(postgres, wg, dates)
-	go benchPostgresNoPartition(noPartionPostgres, wg, dates)
+	switch *testType {
+	case "clickhouse":
+		wg.Add(1)
+		go benchClickHouse(clickhouse, wg, dates)
+	case "postgres":
+		wg.Add(1)
+		go benchPostgresPartition(postgres, wg, dates)
+	case "postgrespartial":
+		wg.Add(1)
+		go benchPostgresPartition(postgres, wg, dates)
+	case "all":
+		wg.Add(3)
+		go benchClickHouse(clickhouse, wg, dates)
+		go benchPostgresPartition(postgres, wg, dates)
+		go benchPostgresNoPartition(noPartionPostgres, wg, dates)
+	default:
+		log.Fatalln("Unknown bench start type")
+	}
 
 	wg.Wait()
 	log.Println("Testing end")

@@ -19,6 +19,16 @@ build_bench:
 
 .PHONY: run_bench
 run_bench:
-	./benchmark
+	./benchmark -test=all
 
+.PHONY: run_bench_clickhouse
+run_bench_clickhouse: build_bench
+	./benchmark -test=clickhouse
 
+.PHONY: run_bench_postgres
+run_bench_postgres: build_bench
+	./benchmark -test=postgres
+
+.PHONY: run_bench_postgrespartial
+run_bench_postgrespartial: build_bench
+	./benchmark -test=postgrespartial
